@@ -1,0 +1,18 @@
+{
+  "content_scripts": [{
+    "matches": ["*://phabricator.dropboxer.net/"],
+    "js": ["jquery-3.3.1.js", "background.js"]
+  }, {
+    "matches": ["*://code.pp.dropbox.com/*"],
+    "js": ["jquery-3.3.1.js", "code.js"]
+  }],
+  "browser_action": {
+    "default_popup": "popup.html"
+  },
+  "manifest_version": 2,
+  "name": "My App",
+  "version": "0.1",
+
+  "description": "A plain text description",
+  "permissions": ["storage", "webRequest", "<all_urls>"]
+}
