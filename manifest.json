@@ -1,13 +1,20 @@
 {
+  "background": {
+    "scripts": ["background.js"]
+  },
   "content_scripts": [{
     "matches": ["*://phabricator.dropboxer.net/"],
-    "js": ["jquery-3.3.1.js", "background.js"]
+    "js": ["jquery-3.3.1.js", "phab.js"]
   }, {
     "matches": ["*://code.pp.dropbox.com/*"],
-    "js": ["jquery-3.3.1.js", "code.js"]
+    "js": ["jquery-3.3.1.js", "code.js"],
+    "css": ["code.css"]
+  }, {
+    "matches": ["*://code.pp.dropbox.com/*routes.yaml"],
+    "js": ["jquery-3.3.1.js", "routes.js"],
+    "css": ["code.css"]
   }],
   "browser_action": {
-    "default_popup": "popup.html"
   },
   "manifest_version": 2,
   "name": "My App",

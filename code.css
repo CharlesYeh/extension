@@ -1,0 +1,54 @@
+.code_breadcrumb {
+  position: fixed;
+  top: 0px;
+  right: 0px;
+  width: 300px;
+  height: 100%;
+
+  background-color: #fff;
+  overflow-y: scroll;
+  white-space: nowrap;
+  z-index: 999;
+}
+
+.code_breadcrumb .element {
+  display: block;
+  width: 100%;
+  border: 1px solid #aaa;
+  font-size: 10px;
+
+  padding: 5px;
+}
+
+.element * {
+  overflow-x: hidden;
+}
+
+.element .header * {
+  display: inline-block;
+}
+
+.element .header .close_button {
+  margin-right: 10px;
+  color: #ff0000;
+}
+
+.element .header .close_button:hover {
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.element.newly_added {
+  background: #ccc;
+}
+
+.element:not(.newly_added) {
+  background: #fff;
+  -webkit-transition: background 1s; /* Safari */
+  transition: background 1s;
+}
+
+/* routes */
+.action_tag {
+  cursor: pointer;
+}
