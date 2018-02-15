@@ -196,7 +196,7 @@ function restart() {
       window.location = d.url;
     } else {
       previousHash = tag.hash;
-      simulation.alpha(1).restart();
+      simulation.alphaTarget(.1).restart();
     }
   });
   node = newNodes.merge(node);
@@ -226,7 +226,7 @@ function restart() {
   // Update and restart the simulation.
   simulation.nodes(nodes);
   simulation.force("link").links(links);
-  simulation.alphatarget(.1).restart();
+  simulation.alphaTarget(.1).restart();
 }
 
 function ticked() {
