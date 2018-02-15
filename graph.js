@@ -162,11 +162,11 @@ var nodes = [],
     nodecontext = [];
 
 var simulation = d3.forceSimulation(nodes)
-    .force("charge", d3.forceManyBody().strength(-600))
+    .force("charge", d3.forceManyBody().strength(-800))
     .force("link", d3.forceLink(links).distance(100))
     .force("x", d3.forceX())
     .force("y", d3.forceY())
-    .alpha(.1)
+    .alpha(1)
     .on("tick", ticked);
 
 var g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")"),
@@ -196,7 +196,7 @@ function restart() {
       window.location = d.url;
     } else {
       previousHash = tag.hash;
-      simulation.alpha(.01).restart();
+      simulation.alpha(1).restart();
     }
   });
   node = newNodes.merge(node);
@@ -226,7 +226,7 @@ function restart() {
   // Update and restart the simulation.
   simulation.nodes(nodes);
   simulation.force("link").links(links);
-  simulation.alpha(.1).restart();
+  simulation.alphatarget(.1).restart();
 }
 
 function ticked() {
@@ -246,7 +246,7 @@ function ticked() {
   nodecontext.attr("x", function(d) { return d.x - NODE_WIDTH / 2 + 3; });
 }
 
-function colorOnSelect(notSelected, selected) {
+function colorOnSelect(selected, notSelected) {
   return function(d) {
     const tag = document.createElement("a");
     tag.href = d.url;
