@@ -1,7 +1,12 @@
-const nodes = [];
-const edges = [];
 const urlIdMap = {};
 
+const w = 800;
+const h = 500;
+
+const NODE_WIDTH = 150;
+const NODE_HEIGHT = 30;
+
+// used to link urls after a line number is clicked
 var previousHash = window.location.hash
 
 $(document).ready(function() {
@@ -67,7 +72,7 @@ $(document).ready(function() {
   });
 });
 
-function addEdge(nodeMap, lineMap, source, target) {
+function addEdge(nodeMap, urlToLineMap, source, target) {
   // TODO: brittle, if target is already a source, don't add
   if (target in nodeMap) {
     return;
@@ -77,7 +82,7 @@ function addEdge(nodeMap, lineMap, source, target) {
   // TODO: don't parse all src each time
   if (match) {
     const lineno = match[1] - 1;
-    lineMap[target] = $("#source-code").text().split("\n")[lineno];
+    urlToLineMap[target] = $("#source-code").text().split("\n")[lineno];
   }
 
   if (source in nodeMap) {
@@ -86,36 +91,28 @@ function addEdge(nodeMap, lineMap, source, target) {
     nodeMap[source] = [target];
   }
 
-  var sourceId = renderNode(urlIdMap, lineMap, nodes, source);
-  var targetId = renderNode(urlIdMap, lineMap, nodes, target);
-  edges.push({
-    source: sourceId,
-    target: targetId,
-  });
+  const sourceNode = renderNode(urlToLineMap, source);
+  const targetNode = renderNode(urlToLineMap, target);
+  links.push({source: sourceNode, target: targetNode});
+
+  restart();
 }
 
 function renderGraph(urlToNodeMap, urlToLineMap) {
-  const w = 800;
-  const h = 800;
-
   for (var url in urlToNodeMap) {
-    const links = urlToNodeMap[url];
+    const sourceNode = renderNode(urlToLineMap, url);
 
-    const sourceId = renderNode(urlIdMap, urlToLineMap, nodes, url);
-    for (var destUrl of links) {
-      const destId = renderNode(urlIdMap, urlToLineMap, nodes, destUrl);
-
-      edges.push({
-        source: sourceId,
-        target: destId,
-      });
+    const targets = urlToNodeMap[url];
+    for (var target of targets) {
+      const targetNode = renderNode(urlToLineMap, target);
+      links.push({source: sourceNode, target: targetNode});
     }
   }
 
-  paintGraph(w, h, nodes, edges);
+  restart();
 }
 
-function renderNode(urlIdMap, urlToLineMap, nodes, url) {
+function renderNode(urlToLineMap, url) {
   if (url in urlIdMap) {
     return urlIdMap[url];
   } else {
@@ -124,154 +121,154 @@ function renderNode(urlIdMap, urlToLineMap, nodes, url) {
       hashText = urlToLineMap[url];
     }
 
-    const nodeId = nodes.length;
-    urlIdMap[url] = nodeId;
-
     const splitUrl = url.split("/");
     const nodeName = splitUrl[splitUrl.length - 1];
-    nodes.push({
+    const node = {
       name: nodeName,
       context: hashText,
       url: url,
-    });
-    return nodeId;
+    };
+
+    urlIdMap[url] = node;
+    nodes.push(node);
+
+    return node;
   }
-}
-
-function paintGraph(w, h, dataNodes, dataEdges) {
-  var btn = d3.select("body").append("button")
-    .attr("class", "btn_clear")
-    .text("Clear all history")
-    .on("click", function() {
-      chrome.storage.local.clear();
-    });
-
-  var svg = d3.select("body").append("svg").attr({"width":w, "height":h});
-
-  const linkDistance = 200;
-  var force = d3.layout.force()
-    .nodes(dataNodes)
-    .links(dataEdges)
-    .size([w,h])
-    .linkDistance([linkDistance])
-    .charge([-500])
-    .theta(1)
-    .gravity(0.07)
-    .start();
-
-  var edges = svg.selectAll("line")
-    .data(dataEdges)
-    .enter()
-    .append("line")
-    .attr("id",function(d,i) {return 'edge'+i})
-    .attr('marker-end','url(#arrowhead)')
-    .style("stroke","#ccc")
-    .style("pointer-events", "none");
-
-  const NODE_WIDTH = 150;
-  const NODE_HEIGHT = 30;
-  var nodes = svg.selectAll("rect")
-    .data(dataNodes)
-    .enter()
-    .append("rect")
-    .attr("width", NODE_WIDTH)
-    .attr("height", NODE_HEIGHT)
-    .call(force.drag)
-    .on("click", function(d) {
-      // TODO: disallow on drag, do tick
-      window.location = d.url;
-      previousHash = window.location.hash;
-    });
-
-  var nodelabels = svg.selectAll(".nodelabel")
-    .data(dataNodes)
-    .enter()
-    .append("text")
-    .attr({"x":function(d){return d.x;},
-           "y":function(d){return d.y;},
-           "class":"nodelabel",
-           "stroke":"black",
-           "font-size": "10",
-    });
-
-  const tspan1 = nodelabels
-    .append("tspan")
-    .attr({"x":function(d){return d.x;}})
-    .text(function(d){return d.name;});
-
-  const tspan2 = nodelabels
-    .append("tspan")
-    .attr({
-      "x":function(d){return d.x;},
-      "dy":"1em",
-    })
-    .text(function(d){return d.context;});
-
-  force.on("tick", function(){
-    edges.attr({"x1": function(d){return d.source.x;},
-                "y1": function(d){return d.source.y;},
-                "x2": function(d){return d.target.x;},
-                "y2": function(d){return d.target.y;}
-    });
-
-    nodes.attr({"x":function(d){return d.x - 5 - NODE_WIDTH / 2;},
-                "y":function(d){return d.y - 12 - NODE_HEIGHT / 2;}
-         })
-         .style("fill", function(d) {
-           const currentUrl = window.location.pathname + window.location.hash;
-           if (currentUrl == d.url) {
-             return "#fee";
-           } else {
-             return "#eee";
-           }
-         })
-         .style("stroke", function(d) {
-           const currentUrl = window.location.pathname + window.location.hash;
-           if (currentUrl == d.url) {
-             return "#f99";
-           } else {
-             return "#999";
-           }
-         });
-
-    nodelabels.attr("x", function(d) { return d.x - NODE_WIDTH / 2; })
-              .attr("y", function(d) { return d.y - NODE_HEIGHT / 2; });
-
-    tspan1.attr("x", function(d) { return d.x - NODE_WIDTH / 2; })
-              .attr("y", function(d) { return d.y - NODE_HEIGHT / 2; });
-    tspan2.attr("x", function(d) { return d.x - NODE_WIDTH / 2; })
-              .attr("y", function(d) { return d.y - NODE_HEIGHT / 2; });
-
-    /*
-
-    edgepaths.attr('d', function(d) { var path='M '+d.source.x+' '+d.source.y+' L '+ d.target.x +' '+d.target.y;
-                                       //console.log(d)
-                                       return path});
-
-    edgelabels.attr('transform',function(d,i){
-        if (d.target.x<d.source.x){
-            bbox = this.getBBox();
-            rx = bbox.x+bbox.width/2;
-            ry = bbox.y+bbox.height/2;
-            return 'rotate(180 '+rx+' '+ry+')';
-            }
-        else {
-            return 'rotate(0)';
-            }
-    });
-    */
-  });
 }
 
 function getReferrerPath(withSearch=false) {
   const tag = document.createElement("a");
-  //tag.href = document.referrer;
-  tag.href = parent.location.hash
+  tag.href = parent.location;
 
   var path = tag.pathname;
   if (path.startsWith("/view/server")) {
     path = path.substring("/view/server".length);
   }
 
-  return path + tag.hashname + (withSearch ? tag.search : "");
+  return path + tag.hash + (withSearch ? tag.search : "");
 }
+
+/************************************************************
+                       D3 FUNCTIONALITY
+*************************************************************/
+d3.select("body").append("svg").attr({"width": w, "height": h});
+const width = w;
+const height = h;
+var svg = d3.select("svg");
+
+var nodes = [],
+    links = [],
+    nodelabels = [],
+    nodecontext = [];
+
+var simulation = d3.forceSimulation(nodes)
+    .force("charge", d3.forceManyBody().strength(-600))
+    .force("link", d3.forceLink(links).distance(100))
+    .force("x", d3.forceX())
+    .force("y", d3.forceY())
+    .alpha(.1)
+    .on("tick", ticked);
+
+var g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")"),
+    link = g.append("g").attr("stroke", "#000").attr("stroke-width", 1.5).selectAll(".link"),
+    node = g.append("g").attr("stroke", "#fff").attr("stroke-width", 1.5).selectAll(".node"),
+    nodelabels = g.append("g").selectAll(".nodelabel");
+
+restart();
+
+function restart() {
+
+  // Apply the general update pattern to the nodes.
+  node = node.data(nodes, function(d) { return d.url;});
+  node.exit().remove();
+  var newNodes = node.enter();
+  newNodes = newNodes
+    .append("rect")
+    .attr("fill", function(d) { return "#aaa"; })
+    .attr("width", NODE_WIDTH)
+    .attr("height", NODE_HEIGHT);
+  newNodes.on("click", function(d) {
+    // TODO: disallow on drag
+    const tag = document.createElement("a");
+    tag.href = d.url;
+
+    if (tag.hash == previousHash) {
+      window.location = d.url;
+    } else {
+      previousHash = tag.hash;
+      simulation.alpha(.01).restart();
+    }
+  });
+  node = newNodes.merge(node);
+
+  // Apply the general update pattern to the links.
+  link = link.data(links, function(d) { return d.source.url + "-" + d.target.url; });
+  link.exit().remove();
+  link = link.enter().append("line").merge(link);
+
+  // Node labels
+  nodelabels = nodelabels.data(nodes, function(d) { return d.id;});
+  nodelabels.exit().remove().enter();
+  const nodetext = nodelabels.enter()
+    .append("text");
+  const t1 = nodetext
+    .append("tspan")
+    .attr("fill", "#000000")
+    .attr("font-weight", 600)
+    .text(function(d) { return d.name; });
+  nodecontext = nodetext
+    .append("tspan")
+    .attr("fill", "#000000")
+    .attr("dy", "1em")
+    .text(function(d) { return d.context; });
+  nodelabels = nodetext.merge(nodelabels);
+
+  // Update and restart the simulation.
+  simulation.nodes(nodes);
+  simulation.force("link").links(links);
+  simulation.alpha(.1).restart();
+}
+
+function ticked() {
+  node.attr("x", function(d) { return d.x - NODE_WIDTH / 2; })
+      .attr("y", function(d) { return d.y - NODE_HEIGHT / 2; })
+      .style("fill", colorOnSelect("#fee", "#eee"))
+      .style("stroke", colorOnSelect("#f99", "#999"));
+
+  link.attr("x1", function(d) { return d.source.x; })
+      .attr("y1", function(d) { return d.source.y; })
+      .attr("x2", function(d) { return d.target.x; })
+      .attr("y2", function(d) { return d.target.y; });
+
+  nodelabels.attr("x", function(d) { return d.x - NODE_WIDTH / 2 + 3; })
+            .attr("y", function(d) { return d.y - NODE_HEIGHT / 2 + 12; });
+
+  nodecontext.attr("x", function(d) { return d.x - NODE_WIDTH / 2 + 3; });
+}
+
+function colorOnSelect(notSelected, selected) {
+  return function(d) {
+    const tag = document.createElement("a");
+    tag.href = d.url;
+
+    if (previousHash == tag.hash) {
+      return selected;
+    } else {
+      return notSelected;
+    }
+  }
+}
+
+var btn = d3.select("body").append("button")
+  .attr("class", "btn_clear")
+  .text("Clear all history")
+  .on("click", function() {
+    chrome.storage.local.clear();
+  });
+
+// TODO: hide or show graph
+var btn = d3.select("body").append("button")
+  .attr("class", "btn_hide")
+  .text("Hide graph")
+  .on("click", function() {
+  });
