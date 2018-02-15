@@ -1,13 +1,43 @@
-const urlIdMap = {};
+const WIDTH = 800;
+const HEIGHT = 500;
 
-const w = 800;
-const h = 500;
-
-const NODE_WIDTH = 150;
+const NODE_WIDTH = 200;
 const NODE_HEIGHT = 30;
+
 
 // used to link urls after a line number is clicked
 var previousHash = window.location.hash
+
+d3.select("body").append("svg").attr({"width": WIDTH, "height": HEIGHT});
+var svg = d3.select("svg");
+
+var urlIdMap = {};
+var nodes = [],
+    links = [],
+    nodelabels = [],
+    nodecontext = [];
+
+d3.select("body").append("button")
+  .attr("class", "btn_clear")
+  .text("Clear all history")
+  .on("click", function() {
+    chrome.storage.local.clear();
+
+    urlIdMap = {};
+    nodes = [];
+    links = [];
+    nodelabels = [];
+    nodecontext = [];
+
+    restart();
+  });
+
+// TODO: hide or show graph
+d3.select("body").append("button")
+  .attr("class", "btn_hide")
+  .text("Hide graph")
+  .on("click", function() {
+  });
 
 $(document).ready(function() {
 
@@ -151,25 +181,16 @@ function getReferrerPath(withSearch=false) {
 /************************************************************
                        D3 FUNCTIONALITY
 *************************************************************/
-d3.select("body").append("svg").attr({"width": w, "height": h});
-const width = w;
-const height = h;
-var svg = d3.select("svg");
-
-var nodes = [],
-    links = [],
-    nodelabels = [],
-    nodecontext = [];
-
 var simulation = d3.forceSimulation(nodes)
-    .force("charge", d3.forceManyBody().strength(-800))
-    .force("link", d3.forceLink(links).distance(100))
+    .force("charge", d3.forceManyBody().strength(-2000))
+    .force("link", d3.forceLink(links).distance(120))
+    .force("gravity", d3.forceManyBody().strength(300))
     .force("x", d3.forceX())
     .force("y", d3.forceY())
     .alpha(1)
     .on("tick", ticked);
 
-var g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")"),
+var g = svg.append("g").attr("transform", "translate(" + WIDTH / 2 + "," + HEIGHT / 2 + ")"),
     link = g.append("g").attr("stroke", "#000").attr("stroke-width", 1.5).selectAll(".link"),
     node = g.append("g").attr("stroke", "#fff").attr("stroke-width", 1.5).selectAll(".node"),
     nodelabels = g.append("g").selectAll(".nodelabel");
@@ -196,10 +217,14 @@ function restart() {
       window.location = d.url;
     } else {
       previousHash = tag.hash;
-      simulation.alphaTarget(.1).restart();
+      simulation.alphaTarget(.01).restart();
     }
   });
   node = newNodes.merge(node);
+  node.call(d3.drag().on("drag", dragged));
+  function dragged(d) {
+    d3.select(this).attr("x", d.x = d3.event.x).attr("y", d.y = d3.event.y);
+  }
 
   // Apply the general update pattern to the links.
   link = link.data(links, function(d) { return d.source.url + "-" + d.target.url; });
@@ -207,7 +232,7 @@ function restart() {
   link = link.enter().append("line").merge(link);
 
   // Node labels
-  nodelabels = nodelabels.data(nodes, function(d) { return d.id;});
+  nodelabels = nodelabels.data(nodes, function(d) { return d.id; });
   nodelabels.exit().remove().enter();
   const nodetext = nodelabels.enter()
     .append("text");
@@ -226,7 +251,7 @@ function restart() {
   // Update and restart the simulation.
   simulation.nodes(nodes);
   simulation.force("link").links(links);
-  simulation.alphaTarget(.1).restart();
+  simulation.alphaTarget(.01).restart();
 }
 
 function ticked() {
@@ -258,17 +283,3 @@ function colorOnSelect(selected, notSelected) {
     }
   }
 }
-
-var btn = d3.select("body").append("button")
-  .attr("class", "btn_clear")
-  .text("Clear all history")
-  .on("click", function() {
-    chrome.storage.local.clear();
-  });
-
-// TODO: hide or show graph
-var btn = d3.select("body").append("button")
-  .attr("class", "btn_hide")
-  .text("Hide graph")
-  .on("click", function() {
-  });
