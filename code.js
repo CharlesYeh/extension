@@ -1,10 +1,14 @@
 $(document).ready(function() {
   const currentUrl = window.location.pathname + window.location.hash;
 
-  chrome.storage.local.get({path: []}, function(result) {
+  chrome.storage.local.get({path: [], toggle: true}, function(result) {
     const path = result.path;
     addUrlToPath(path, currentUrl);
-    renderBreadcrumbs(path);
+
+    // TODO: make toggle instantaneous
+    if (result.toggle) {
+      renderBreadcrumbs(path);
+    }
   });
 
   $("a").on("click", function(evt) {
@@ -63,7 +67,7 @@ function createCrumb(url) {
   return $element[0];
 }
 
-function loadCrumb($crumb, url) {
+function loadCrumb($crumb, url, context=2) {
   const proto = window.location.protocol;
   const host = window.location.host;
 
@@ -80,8 +84,8 @@ function loadCrumb($crumb, url) {
       // hash format is #L100, 1-indexed
       const hash = Number.parseInt(url.substring(hashIndex + 2)) - 1;
 
-      const startIndex = Math.max(0, hash - 2);
-      const endIndex = Math.min(lines.length - 1, hash + 2);
+      const startIndex = Math.max(0, hash - context);
+      const endIndex = Math.min(lines.length - 1, hash + context);
       const snippet = [];
       for (var i = startIndex; i <= endIndex; i++) {
 

@@ -1,5 +1,6 @@
 chrome.browserAction.onClicked.addListener(function(tab) {
-  console.log(tab);
-  console.log("HI");
+  chrome.storage.local.get(['toggle'], function(data) {
+    chrome.storage.local.set({toggle: !data.toggle});
+  });
 });
 

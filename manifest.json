@@ -7,7 +7,7 @@
     "js": ["jquery-3.3.1.js", "phab.js"]
   }, {
     "matches": ["*://code.pp.dropbox.com/*"],
-    "js": ["jquery-3.3.1.js", "code.js"],
+    "js": ["jquery-3.3.1.js", "code.js", "d3.v3.min.js", "graph.js"],
     "css": ["code.css"]
   }, {
     "matches": ["*://code.pp.dropbox.com/*routes.yaml"],
